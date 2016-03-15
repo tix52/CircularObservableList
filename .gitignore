@@ -6,3 +6,6 @@
 \packages\**
 \CircularObservableCollectionTest\bin\
 \CircularObservableCollectionTest\obj\
+packages
+[Bb]in
+obj
