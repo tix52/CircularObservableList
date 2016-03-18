@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -9,9 +10,9 @@ namespace CircularObservableCollection
     public class ObservableCircularCollection<T> : ICollection<T>, INotifyCollectionChanged, INotifyPropertyChanged
     {
         private readonly ObservableCollection<T> _internCollection;
-        private readonly int _size;
-        private int _index;
-        
+        private readonly uint _size;
+        private uint _index;
+
         public event NotifyCollectionChangedEventHandler CollectionChanged;
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -19,13 +20,11 @@ namespace CircularObservableCollection
         {
             _internCollection = new ObservableCollection<T>();
             _index = 0;
-            checked
-            {
-                _size = (int)size;
-            }
+            _size = size;
+
 
             _internCollection.CollectionChanged += OnCollectionChanged;
-            
+
         }
 
         private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -44,28 +43,34 @@ namespace CircularObservableCollection
 
         public void Add(T item)
         {
-            if(_index < _size)
+            if (_index < _size)
             {
                 _internCollection.Add(item);
                 _index++;
-                OnCollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add,item));
-                OnPropertyChanged(this, new PropertyChangedEventArgs(nameof(_internCollection.Count)));
+                OnCollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
 
             }
             else
             {
-                int i =_index % _size;
+                int i;
+                checked
+                {
+                    i = (int)(_index % _size);
+                }
+          //      if (i != _index) throw new IndexOutOfRangeException();
                 var oldItem = _internCollection[i];
-                _internCollection[i] = item;                
+                _internCollection[i] = item;
                 _index++;
-                OnCollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace,item,oldItem,i));
+                OnCollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, i));
 
             }
+            OnPropertyChanged(this, new PropertyChangedEventArgs(nameof(_internCollection.Count)));
         }
 
         public void Clear()
         {
             _internCollection.Clear();
+            _index = 0;
             PropertyChanged(this, new PropertyChangedEventArgs(nameof(_internCollection.Count)));
         }
 
@@ -81,8 +86,8 @@ namespace CircularObservableCollection
 
         public bool Remove(T item)
         {
-            //_index = _internCollection.IndexOf(item) + 1;
             var result = _internCollection.Remove(item);
+            _index--;
             OnPropertyChanged(this, new PropertyChangedEventArgs(nameof(_internCollection.Count)));
             return result;
         }
